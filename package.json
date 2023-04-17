@@ -1,0 +1,35 @@
+{
+  "name": "mback",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "nodemon --experimental-specifier-resolution=node --exec ts-node-esm src/index.ts"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.3",
+    "@types/express": "^4.17.17",
+    "@types/jsonwebtoken": "^9.0.1",
+    "@types/md5": "^2.3.2",
+    "@types/multer": "^1.4.7",
+    "@types/node": "^18.15.11",
+    "nodemon": "^2.0.22",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "md5": "^2.3.0",
+    "multer": "^1.4.5-lts.1",
+    "sqlite": "^4.1.2",
+    "sqlite3": "^5.1.6"
+  }
+}
