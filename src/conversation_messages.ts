@@ -51,20 +51,22 @@ function addConversationMessage(conId: number, text: string, senderId: number) {
 }
 
 router.post('/api/conversations/:id/messages', auth, upload.array("files"), async (req, res) => {
-    const conId = +req.params.id
+    const text = req.body.text
+    const conversationId = +req.params.conversationId
     const userId = (req as UserRequest).userId
-    const con = await db.get<{ user1_id: number, user2_id: number }>("select user1_id, user1_id from conversations where id = ?", conId)
-    if (con === undefined) {
+
+    const conversation = await db.get<{ user1_id: number, user2_id: number }>("select user1_id, user1_id from conversations where id = ?", conversationId)
+    if (conversation === undefined) {
         res.json({ err: "WRONG_ID" })
         return
     }
 
-    if (userId !== con.user1_id && userId !== con.user2_id) {
+    if (userId !== conversation.user1_id && userId !== conversation.user2_id) {
         res.json({ err: "PERMISSION_DENIED" })
         return
     }
 
-    const id = await addConversationMessage(conId, req.body.text, userId)
+    const id = await addConversationMessage(conversationId, text, userId)
     let files = req.files as Express.Multer.File[] | undefined
     if (files !== undefined) {
         for (const file of files) {

@@ -7,9 +7,6 @@ let db: Database;
 
 var router = express.Router();
 
-
-type Post = { id: number, description: string, user_id: number, user_name: string, files: string[] }
-
 function addPost(description: string, user_id: number) {
     return new Promise<number>((resolve, reject) => {
         db.db.run("insert into posts (description, user_id) values (?, ?)", [description, user_id], function (err: any) {
@@ -35,7 +32,7 @@ router.post('/api/posts', auth, upload.array("files", 10), async (req, res) => {
 
 })
 
-export function post(database: Database) {
+export function posts(database: Database) {
     db = database
     return router
 }

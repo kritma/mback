@@ -37,7 +37,7 @@ router.get('/api/profiles/:name', async (req, res) => {
         }
     }
 
-    res.json({ user, posts, conversation_id })
+    res.json({ user, posts: posts_with_files, conversation_id })
 })
 
 export function profiles(database: Database) {
