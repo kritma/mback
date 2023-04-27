@@ -6,6 +6,6 @@ export async function initDatabase(db: Database) {
     await db.run("create table if not exists post_files(postId integer not null, url nvarchar(200) not null)")
     await db.run("create table if not exists conversations(id integer primary key autoincrement, user1_id integer not null, user2_id integer not null)")
     await db.run("create table if not exists conversation_messages(id integer primary key autoincrement, conversation_id integer not null, sender_id integer not null, text nvarchar(1000) not null, created_at datetime not null)")
-    await db.run("create table if not exists conversation_message_files(conversation_message_id integer not null, url nvarchar(200) not null)")
-    await db.run("create table if not exists friends(user1_id integer not null, user2_id integer not null)")
+    await db.run("create table if not exists conversation_message_files(conversation_message_id integer not null, url varchar(200) not null)")
+    await db.run("create table if not exists followers(user_id integer not null, follows_id integer not null)")
 }

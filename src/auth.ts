@@ -5,9 +5,13 @@ export interface UserRequest extends Request {
     userId: number
 }
 
+export function clearCookies(res: Response) {
+    res.clearCookie("token")
+}
+
 export function setAuthCookies(res: Response, userId: number) {
-    const token = jwt.sign({ userId }, process.env.TOKEN_KEY!, { expiresIn: "1h" });
-    res.cookie("token", token, { maxAge: 1000 * 60 * 60, httpOnly: true })
+    const token = jwt.sign({ userId }, process.env.TOKEN_KEY!, { expiresIn: "1d" });
+    res.cookie("token", token, { maxAge: 1000 * 60 * 60 * 24, httpOnly: true, secure: true, sameSite: "none" })
 }
 
 export function getUser(req: Request): number | undefined {
@@ -28,14 +32,16 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
     const token: string | undefined = req.cookies.token;
 
     if (!token) {
-        return res.status(403).json({ err: "NO_TOKEN" })
+        res.status(401).send()
+        return
     }
 
     try {
         const decoded = jwt.verify(token, process.env.TOKEN_KEY!) as JwtPayload
         (req as UserRequest).userId = decoded.userId
     } catch (err) {
-        return res.status(401).send({ err: "INVALID_TOKEN" })
+        res.status(401).send()
+        return
     }
     return next()
 };
