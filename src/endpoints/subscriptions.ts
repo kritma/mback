@@ -10,7 +10,7 @@ router.post('/api/subscriptions', auth, async (req, res) => {
 
     let userId = (req as UserRequest).userId
     if (req.body.to) {
-        await db.run("insert into followers values (?, ?)", userId, req.body.userId)
+        await db.run("insert into followers (user_id, follows_id) values (?, ?)", userId, req.body.userId)
     } else {
         await db.run("delete from followers where user_id = ? and follows_id = ?", userId, req.body.userId)
     }

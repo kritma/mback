@@ -3,6 +3,8 @@ import { Database } from 'sqlite';
 import { UserRequest, auth } from '../auth';
 import { upload } from '../upload';
 import { imageOrDefault } from '../imageOrDefault';
+import { spitFilesIntoCategories } from '../spitFilesIntoCategories';
+
 var router = express.Router();
 
 let db: Database;
@@ -23,24 +25,16 @@ router.get('/api/conversations/:id/messages', auth, async (req, res) => {
     }
 
     let messages = await db.all<{ id: number, sender_id: number, sender_image_url: string, sender_name: string, text: string, created_at: Date }[]>("select cm.id, cm.sender_id, u.image_url as sender_image_url, u.name as sender_name, cm.text, cm.created_at from conversation_messages cm join users u on u.id = cm.sender_id where cm.conversation_id = ? order by cm.created_at", conId)
-    let messagesExtra: { id: number, sender_id: number, sender_image_url: string, sender_name: string, is_send_by_user: boolean, text: string, created_at: Date, images: string[], files: string[] }[] = []
+    let messagesExtra: {
+        id: number, sender_id: number, sender_image_url: string,
+        sender_name: string, is_send_by_user: boolean, text: string, created_at: Date,
+        images: string[], music: string[], videos: string[], files: string[]
+    }[] = []
 
     for (const m of messages) {
-        const all_files = await db.all<{ url: string }[]>("select url from conversation_message_files where conversation_message_id = ?", m.id)
-
-        const images = []
-        const files = []
-
-        for (const file of all_files) {
-            file.url = imageOrDefault(file.url)
-            if (/\.(apng|avif|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/i.test(file.url)) {
-                images.push(file.url)
-            } else {
-                files.push(file.url)
-            }
-        }
-
-        messagesExtra.push({ ...m, files, images, is_send_by_user: m.id === userId })
+        m.sender_image_url = imageOrDefault(m.sender_image_url)
+        const allFiles = await db.all<{ url: string }[]>("select url from conversation_message_files where conversation_message_id = ?", m.id)
+        messagesExtra.push({ ...m, ...spitFilesIntoCategories(allFiles.map(file => file.url)), is_send_by_user: m.sender_id === userId })
     }
 
     res.json(messagesExtra)
@@ -62,8 +56,8 @@ router.post('/api/conversations/:conversationId/messages', auth, upload.array("f
     const conversationId = +req.params.conversationId
     const userId = (req as UserRequest).userId
 
-
     const conversation = await db.get<{ user1_id: number, user2_id: number }>("select user2_id, user1_id from conversations where id = ?", conversationId)
+
 
     if (conversation === undefined) {
         res.json({ err: "WRONG_ID" })
@@ -85,8 +79,6 @@ router.post('/api/conversations/:conversationId/messages', auth, upload.array("f
     }
     res.status(200).send()
 })
-
-
 
 export function conversation_messages(database: Database) {
     db = database

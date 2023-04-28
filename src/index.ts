@@ -4,8 +4,8 @@ import { open } from 'sqlite'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { initDatabase } from './init';
-import { searchUsers } from './endpoints/searchUsers';
+import { initDatabase } from './initDatabase';
+import { search } from './endpoints/search';
 import { login } from './endpoints/login';
 import { posts } from './endpoints/posts';
 import { dialogs } from './endpoints/dialogs';
@@ -15,6 +15,7 @@ import { news } from './endpoints/news';
 import { me } from './endpoints/me';
 import { profiles } from './endpoints/profiles';
 import { subscriptions } from './endpoints/subscriptions';
+import { songs } from './endpoints/songs';
 
 dotenv.config()
 
@@ -33,7 +34,7 @@ express()
     .use(express.urlencoded({ extended: true }))
     .use("/uploads", express.static("./uploads/"))
     .use(login(db))
-    .use(searchUsers(db))
+    .use(search(db))
     .use(posts(db))
     .use(profiles(db))
     .use(dialogs(db))
@@ -42,6 +43,7 @@ express()
     .use(news(db))
     .use(me(db))
     .use(subscriptions(db))
+    .use(songs(db))
     .listen(3000, () => {
         console.log(`Example app listening on port ${port}`)
     })
