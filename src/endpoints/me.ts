@@ -1,39 +1,32 @@
 import express from 'express'
-import { Database } from 'sqlite';
-import { UserRequest, auth, clearCookies, setAuthCookies } from '../auth';
+import { UserRequest, clearCookies } from '../auth';
 import { imageOrDefault } from '../imageOrDefault';
 import { upload } from '../upload';
 import { getUserPosts } from '../getUserPosts';
+import { pool } from '../database';
+import { RowDataPacket } from 'mysql2';
 
-var router = express.Router();
-let db: Database;
+export const me = express.Router();
 
-router.get('/api/me', auth, async (req, res) => {
-    const user = await db.get<{ id: number, name: string, image_url: string | null }>("select id, name, image_url from users where id = ?", (req as UserRequest).userId)
+me.get('/api/me', async (req, res) => {
+    const user = (await pool.execute<({ id: number, name: string, image_url: string | null } & RowDataPacket)[]>("select id, name, image_url from users where id = ?", [(req as UserRequest).userId]))[0][0]
     user!.image_url = imageOrDefault(user!.image_url)
     res.json(user)
 })
 
-router.get('/api/me/logout', auth, async (req, res) => {
+me.get('/api/me/logout', async (req, res) => {
     clearCookies(res)
     res.send()
 })
 
-
-router.get('/api/me/posts', auth, async (req, res) => {
-    const user = await db.get<{ id: number, name: string, image_url: string | null }>("select id, name, image_url from users where id = ?", (req as UserRequest).userId)
-    user!.image_url = imageOrDefault(user!.image_url)
-    const posts = await getUserPosts(db, user!)
+me.get('/api/me/posts', async (req, res) => {
+    const user = (await pool.execute<({ id: number, name: string, image_url: string | null } & RowDataPacket)[]>("select id, name, image_url from users where id = ?", [(req as UserRequest).userId]))[0][0]
+    user.image_url = imageOrDefault(user.image_url)
+    const posts = await getUserPosts(user)
     res.json(posts)
 })
 
-router.post('/api/me', auth, upload.single("image"), async (req, res) => {
-    const user = await db.get<{ id: number, name: string, image_url: string | null }>("update users set image_url = ? where id = ?", req.file?.path, (req as UserRequest).userId)
+me.post('/api/me', upload.single("image"), async (req, res) => {
+    await pool.execute("update users set image_url = ? where id = ?", [req.file?.path, (req as UserRequest).userId])
     res.send()
 })
-
-
-export function me(database: Database) {
-    db = database
-    return router
-}

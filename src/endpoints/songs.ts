@@ -1,38 +1,34 @@
 import express from 'express'
-import { Database } from 'sqlite';
-import { UserRequest, auth, getUser } from '../auth';
+import { UserRequest } from '../auth';
 import { upload } from '../upload';
 import { imageOrDefault } from '../imageOrDefault';
+import { pool } from '../database';
+import { RowDataPacket } from 'mysql2';
 
-var router = express.Router();
-let db: Database;
+export const songs = express.Router();
 
-router.post('/api/songs', auth, upload.single("audio"), async (req, res) => {
+songs.post('/api/songs', upload.single("audio"), async (req, res) => {
     let userId = (req as UserRequest).userId
-    await db.run("insert into songs (user_id, name, url) values (?, ?, ?)", userId, req.body.name, req.file?.path)
+    await pool.execute("insert into songs (user_id, name, url) values (?, ?, ?)", [userId, req.body.name, req.file?.path])
     res.send()
 })
 
-router.delete('/api/favorite/songs', auth, async (req, res) => {
+songs.delete('/api/favorite/songs', async (req, res) => {
     let userId = (req as UserRequest).userId
-    await db.run("delete from favorite_songs where song_id = ? and user_id = ?", +req.body.id, userId)
+    await pool.execute("delete from favorite_songs where song_id = ? and user_id = ?", [+req.body.id, userId])
     res.send()
 })
 
-router.post('/api/favorite/songs', auth, async (req, res) => {
+songs.post('/api/favorite/songs', async (req, res) => {
     let userId = (req as UserRequest).userId
-    await db.run("insert into favorite_songs (song_id, user_id) values (?, ?)", +req.body.id, userId)
+    await pool.execute("insert into favorite_songs (song_id, user_id) values (?, ?)", [+req.body.id, userId])
     res.send()
 })
 
-router.get('/api/favorite/songs', auth, async (req, res) => {
+songs.get('/api/favorite/songs', async (req, res) => {
     let userId = (req as UserRequest).userId
-    let songs = await db.all<{ id: number, name: string, url: string, user_name: string, }[]>("select s.id, s.name, s.url, u.name as user_name from favorite_songs f join songs s on s.id = f.song_id join users u on u.id = s.user_id where f.user_id = ?", userId)
+    let songs = (await pool.execute<({ id: number, name: string, url: string, user_name: string } & RowDataPacket)[]>("select s.id, s.name, s.url, u.name as user_name from favorite_songs f join songs s on s.id = f.song_id join users u on u.id = s.user_id where f.user_id = ?", [userId]))[0]
     songs.forEach(song => song.url = imageOrDefault(song.url))
     res.json(songs.map(song => ({ ...song, isFavorite: true })))
 })
 
-export function songs(database: Database) {
-    db = database
-    return router
-}

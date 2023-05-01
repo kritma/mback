@@ -1,38 +1,29 @@
 import express from 'express'
-import { Database } from 'sqlite';
 import { UserRequest, auth, getUser } from '../auth';
+import { pool } from '../database';
+import { RowDataPacket } from 'mysql2';
 
-var router = express.Router();
-let db: Database;
+export const subscriptions = express.Router();
 
-router.post('/api/subscriptions', auth, async (req, res) => {
-    console.debug("optimize this");
-
+subscriptions.post('/api/subscriptions', async (req, res) => {
     let userId = (req as UserRequest).userId
     if (req.body.to) {
-        await db.run("insert into followers (user_id, follows_id) values (?, ?)", userId, req.body.userId)
+        await pool.execute("insert into followers (user_id, follows_id) values (?, ?)", [userId, req.body.userId])
     } else {
-        await db.run("delete from followers where user_id = ? and follows_id = ?", userId, req.body.userId)
+        await pool.execute("delete from followers where user_id = ? and follows_id = ?", [userId, req.body.userId])
     }
     res.send()
 })
 
-router.get('/api/subscriptions/:id', async (req, res) => {
-    let id = getUser(req)
-    if (id === undefined) {
-        res.json({ isSubscribed: false })
-        return
-    }
-    let follows = await db.get<{ follows_id: number }>("select follows_id from followers where user_id = ? and follows_id = ?", id, +req.params.id)
+subscriptions.get('/api/subscriptions/:id', auth, async (req, res) => {
+    let userId = (req as UserRequest).userId
 
-    if (follows === undefined) {
+    let follows = (await pool.execute<({ follows_id: number } & RowDataPacket)[]>("select follows_id from followers where user_id = ? and follows_id = ?", [userId, +req.params.id]))[0]
+
+    if (follows.length === 0) {
         res.json({ isSubscribed: false })
         return
     }
+
     res.json({ isSubscribed: true })
 })
-
-export function subscriptions(database: Database) {
-    db = database
-    return router
-}

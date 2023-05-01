@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "tsc --watch & nodemon --experimental-specifier-resolution=node build/index.js"
+    "dev": "tsc --watch & nodemon --experimental-specifier-resolution=node build/index.js",
+    "build": "tsc"
   },
   "type": "module",
   "keywords": [],
@@ -18,7 +19,6 @@
     "@types/md5": "^2.3.2",
     "@types/multer": "^1.4.7",
     "@types/node": "^18.15.11",
-    "@types/sqlite3": "^3.1.8",
     "nodemon": "^2.0.22",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.4"
@@ -31,7 +31,6 @@
     "jsonwebtoken": "^9.0.0",
     "md5": "^2.3.0",
     "multer": "^1.4.5-lts.1",
-    "sqlite": "^4.1.2",
-    "sqlite3": "^5.1.6"
+    "mysql2": "^3.2.4"
   }
 }

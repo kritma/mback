@@ -1,29 +1,26 @@
 import express from 'express'
-import { Database } from 'sqlite';
 import md5 from 'md5'
-import { UserRequest, auth, setAuthCookies } from '../auth';
+import { setAuthCookies } from '../auth';
+import { pool } from '../database';
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-var router = express.Router();
-let db: Database;
+export const login = express.Router();
 
 async function register(name: string, password: string) {
-    return new Promise<number>((resolve, reject) => {
-        db.db.run("insert into users (name, password_hash) values (?, ?)", [name, md5(password)], function (err: any) {
-            if (err) {
-                reject(err)
-            }
-            resolve(this.lastID)
-        })
-    })
+    let res = (await pool.execute<ResultSetHeader>("insert into users (name, password_hash) values (?, ?)", [name, md5(password)]))[0]
+    return res.insertId
 }
 
-router.post('/api/login', async (req, res) => {
+login.post('/api/login', async (req, res) => {
+    console.debug("needs check")
+
     const { name, password } = req.body as { name: string, password: string }
     if (name === undefined || password === undefined) {
         res.json({ err: "INVALID_NAME_OR_PASSWORD" })
         return
     }
-    const user = await db.get<{ id: number, name: string, image_url: string, password_hash: string }>("select id, name, image_url, password_hash from users where name = ?", name)
+    const user = (await pool.execute<({ id: number, name: string, image_url: string, password_hash: string } & RowDataPacket)[]>("select id, name, image_url, password_hash from users where name = ? limit 1", [name]))[0][0]
+
     if (user === undefined) {
         if (/^[a-z0-9_]+$/i.test(name)) {
             const id = await register(name, password)
@@ -42,9 +39,3 @@ router.post('/api/login', async (req, res) => {
         res.json({ err: "INVALID_NAME_OR_PASSWORD" })
     }
 })
-
-
-export function login(database: Database) {
-    db = database
-    return router
-}

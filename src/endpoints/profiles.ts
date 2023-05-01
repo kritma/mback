@@ -1,13 +1,13 @@
 import express from 'express'
-import { Database } from 'sqlite';
 import { getUserPosts } from '../getUserPosts';
 import { imageOrDefault } from '../imageOrDefault';
+import { pool } from '../database';
+import { RowDataPacket } from 'mysql2';
 
-var router = express.Router();
-let db: Database;
+export const profiles = express.Router();
 
-router.get('/api/profiles/:name', async (req, res) => {
-    const user = await db.get<{ id: number, name: string, image_url: string | null }>("select id, name, image_url from users where name = ? limit 1", req.params.name)
+profiles.get('/api/profiles/:name', async (req, res) => {
+    const user = (await pool.execute<({ id: number, name: string, image_url: string | null } & RowDataPacket)[]>("select id, name, image_url from users where name = ? limit 1", req.params.name))[0][0]
 
     if (user === undefined) {
         res.json({ err: "NOT_FOUND" })
@@ -16,12 +16,8 @@ router.get('/api/profiles/:name', async (req, res) => {
 
     user.image_url = imageOrDefault(user.image_url)
 
-    const posts = await getUserPosts(db, user)
+    const posts = await getUserPosts(user)
 
     res.json({ user, posts })
 })
 
-export function profiles(database: Database) {
-    db = database
-    return router
-}
